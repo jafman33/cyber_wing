@@ -1,0 +1,75 @@
+#ifndef __ROBOTEQ_H_INCLUDED__
+#define __ROBOTEQ_H_INCLUDED__
+
+#include "Arduino.h"
+#include "FlexCAN.h"
+#include "../../SO_Config.h"
+
+namespace Cyberpod
+{
+	class Roboteq
+	{
+	public:
+		enum class STATUS : uint8_t
+		{
+			INIT     = 1,
+			RUNNING  = 2,
+			FAILURE  = 3
+		};
+
+		enum class MODE : uint8_t
+		{
+			CAN   = 1,
+			RS232 = 2
+		};
+
+		enum class CMD_IDX : uint16_t
+		{
+			CANGO = 0x2000,
+			EX    = 0x200C,
+			MG    = 0x200D
+
+		};
+
+		struct CONFIG
+		{
+			uint16_t openCanId = 0x001;
+			uint16_t queryIdx  = 0x600;
+			uint16_t replyIdx  = 0x580;
+			uint32_t startupTimeout = 10000;
+		};
+
+	public:
+		Roboteq(const MODE &mode,
+						FlexCAN &port,
+		        const uint32_t &readTimeout,
+		        const uint32_t &receiveTimeout);
+
+		int32_t init(void);
+		int32_t sendCmd(const float &u,
+                    const uint8_t motorIdx,
+                    const bool checkAck = true);
+		int32_t sendCmd(const float &u1,
+										const float &u2,
+										const bool checkAck = true);
+		int32_t start(const bool checkAck = true);
+		int32_t stop(const bool checkAck = true);
+
+		CONFIG config_;
+		STATUS status_;
+
+	protected:
+		bool newMsgCheck(void);
+		bool checkSuccessful(const uint16_t queryIdx,
+			                   const uint8_t querySubIdx);
+
+		const MODE mode_;
+		const uint32_t readTimeout_;
+		const uint32_t receiveTimeout_;
+		FlexCAN &port_;
+		CAN_message_t msgIn_;
+		CAN_message_t msgOut_;
+	};
+
+}
+#endif
